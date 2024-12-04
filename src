@@ -1,1 +1,240 @@
 Source code files
+import java.util.*;
+
+// Card Class
+class Card {
+    private String rank;
+    private String suit;
+    private int value;
+
+    public Card(String rank, String suit, int value) {
+        this.rank = rank;
+        this.suit = suit;
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return rank + " of " + suit;
+    }
+}
+
+// Deck Class
+class Deck {
+    private List<Card> cards;
+
+    public Deck() {
+        cards = new ArrayList<>();
+        String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
+        String[] ranks = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"};
+        int[] values = {2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11};
+
+        for (String suit : suits) {
+            for (int i = 0; i < ranks.length; i++) {
+                cards.add(new Card(ranks[i], suit, values[i]));
+            }
+        }
+        shuffle();
+    }
+
+    public void shuffle() {
+        Collections.shuffle(cards);
+    }
+
+    public Card drawCard() {
+        return cards.remove(cards.size() - 1);
+    }
+}
+
+// Hand Class
+class Hand {
+    private List<Card> cardsInHand;
+
+    public Hand() {
+        cardsInHand = new ArrayList<>();
+    }
+
+    public void addCard(Card card) {
+        cardsInHand.add(card);
+    }
+
+    public int calculateTotal() {
+        int total = 0;
+        int aceCount = 0;
+        for (Card card : cardsInHand) {
+            total += card.getValue();
+            if (card.getValue() == 11) aceCount++;
+        }
+
+        while (total > 21 && aceCount > 0) {
+            total -= 10;
+            aceCount--;
+        }
+        return total;
+    }
+
+    public boolean isBust() {
+        return calculateTotal() > 21;
+    }
+
+    @Override
+    public String toString() {
+        return cardsInHand.toString();
+    }
+}
+
+// Player Class
+class Player {
+    private String name;
+    private Hand hand;
+
+    public Player(String name) {
+        this.name = name;
+        this.hand = new Hand();
+    }
+
+    public void hit(Card card) {
+        hand.addCard(card);
+    }
+
+    public void stand() {
+        System.out.println(name + " stands.");
+    }
+
+    public boolean checkBust() {
+        return hand.isBust();
+    }
+
+    public int getHandTotal() {
+        return hand.calculateTotal();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return hand.toString();
+    }
+}
+
+// Dealer Class
+class Dealer {
+    private Hand hand;
+
+    public Dealer() {
+        this.hand = new Hand();
+    }
+
+    public void dealCard(Player player, Deck deck) {
+        player.hit(deck.drawCard());
+    }
+
+    public void flipHiddenCard() {
+        System.out.println("Dealer reveals hidden card.");
+    }
+
+    public void hit(Card card) {
+        hand.addCard(card);
+    }
+
+    public boolean checkBust() {
+        return hand.isBust();
+    }
+
+    public int getHandTotal() {
+        return hand.calculateTotal();
+    }
+
+    @Override
+    public String toString() {
+        return hand.toString();
+    }
+}
+
+// Game Class
+class Game {
+    private Deck deck;
+    private Player player;
+    private Dealer dealer;
+
+    public Game(String playerName) {
+        deck = new Deck();
+        player = new Player(playerName);
+        dealer = new Dealer();
+    }
+
+    public void startGame() {
+        System.out.println("Starting Blackjack Game...");
+
+        // Initial Deal
+        dealer.hit(deck.drawCard()); // Dealer's face-down card
+        dealer.hit(deck.drawCard()); // Dealer's face-up card
+        player.hit(deck.drawCard());
+        player.hit(deck.drawCard());
+
+        System.out.println("Player's hand: " + player);
+        System.out.println("Dealer's hand: [hidden], " + dealer);
+
+        Scanner scanner = new Scanner(System.in);
+        boolean playerTurn = true;
+
+        while (playerTurn) {
+            System.out.println("Do you want to 'hit' or 'stand'? ");
+            String action = scanner.nextLine().toLowerCase();
+            if (action.equals("hit")) {
+                player.hit(deck.drawCard());
+                System.out.println("Player's hand: " + player);
+                if (player.checkBust()) {
+                    System.out.println("Player busts! Dealer wins.");
+                    return;
+                }
+            } else if (action.equals("stand")) {
+                player.stand();
+                playerTurn = false;
+            } else {
+                System.out.println("Invalid action. Please choose 'hit' or 'stand'.");
+            }
+        }
+
+        dealer.flipHiddenCard();
+        System.out.println("Dealer's hand: " + dealer);
+
+        while (dealer.getHandTotal() < 17) {
+            dealer.hit(deck.drawCard());
+            System.out.println("Dealer's hand: " + dealer);
+            if (dealer.checkBust()) {
+                System.out.println("Dealer busts! Player wins.");
+                return;
+            }
+        }
+
+        // Compare hands
+        int playerTotal = player.getHandTotal();
+        int dealerTotal = dealer.getHandTotal();
+
+        System.out.println("Player's total: " + playerTotal);
+        System.out.println("Dealer's total: " + dealerTotal);
+
+        if (playerTotal > dealerTotal) {
+            System.out.println("Player wins!");
+        } else if (playerTotal < dealerTotal) {
+            System.out.println("Dealer wins!");
+        } else {
+            System.out.println("It's a tie!");
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter your name: ");
+        String playerName = scanner.nextLine();
+        Game game = new Game(playerName);
+        game.startGame();
+    }
+}
